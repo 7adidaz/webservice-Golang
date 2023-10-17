@@ -24,14 +24,21 @@ type Error struct {
 	message string
 }
 
+func logger(f http.HandlerFunc) http.HandlerFunc { // middleware
+	return func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s -> %s \n", r.Method, r.URL.Path)
+		f(w, r)
+	}
+}
+
 func main() {
 	dbLoader()
 	defer db.Close()
 
 	r := mux.NewRouter().StrictSlash(true)
-	r.HandleFunc("/api/v1/blog", allBlogs).Methods("GET")
-	r.HandleFunc("/api/v1/blog", postBlog).Methods("POST")
-	r.HandleFunc("/api/v1/blog/{blogId}", getBlogById).Methods("GET")
+	r.HandleFunc("/api/v1/blog", logger(allBlogs)).Methods("GET")
+	r.HandleFunc("/api/v1/blog", logger(postBlog)).Methods("POST")
+	r.HandleFunc("/api/v1/blog/{blogId}", logger(getBlogById)).Methods("GET")
 
 	http.ListenAndServe(":3000", r)
 }
